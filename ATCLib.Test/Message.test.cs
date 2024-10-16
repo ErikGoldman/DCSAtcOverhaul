@@ -90,4 +90,69 @@ public class MessageTests
         Assert.False(result[5].IsCallsign);
         Assert.Equal("350", result[5].Content);
     }
+
+    [Fact]
+    public void SplitMessage_WithAmbiguousPrefix_ReturnsCorrectTokens()
+    {
+        // Arrange
+        var rawMessage = "Delta 123 Delta 456 request flight level 350";
+        var communicators = new ActiveCommunicatorList();
+        communicators.AddCommunicator(new Aircraft("Delta 123", "Aircraft"));
+        communicators.AddCommunicator(new Aircraft("Delta 456", "Aircraft"));
+
+        // Act
+        var result = Message.SplitMessage(rawMessage, communicators);
+
+        // Assert
+        Assert.Equal(6, result.Count);
+
+        Assert.True(result[0].IsCallsign);
+        Assert.Equal("Delta 123", result[0].Content);
+        Assert.True(result[1].IsCallsign);
+        Assert.Equal("Delta 456", result[1].Content);
+        Assert.False(result[2].IsCallsign);
+        Assert.Equal("request", result[2].Content);
+        Assert.False(result[3].IsCallsign);
+        Assert.Equal("flight", result[3].Content);
+        Assert.False(result[4].IsCallsign);
+        Assert.Equal("level", result[4].Content);
+        Assert.False(result[5].IsCallsign);
+        Assert.Equal("350", result[5].Content);
+    }
+
+    [Fact]
+    public void SplitMessage_WithAmbiguousPrefixNotCallsign_ReturnsCorrectTokens()
+    {
+        // Arrange
+        var rawMessage = "Hey Delta Charlie how are you doing Delta 456 sup";
+        var communicators = new ActiveCommunicatorList();
+        communicators.AddCommunicator(new Aircraft("Delta Charlie 123", "Aircraft"));
+        communicators.AddCommunicator(new Aircraft("Delta 456", "Aircraft"));
+
+        // Act
+        var result = Message.SplitMessage(rawMessage, communicators);
+
+        // Assert
+        Assert.Equal(9, result.Count);
+
+        Assert.False(result[0].IsCallsign);
+        Assert.Equal("Hey", result[0].Content);
+        Assert.False(result[1].IsCallsign);
+        Assert.Equal("Delta", result[1].Content);
+        Assert.False(result[2].IsCallsign);
+        Assert.Equal("Charlie", result[2].Content);
+        Assert.False(result[3].IsCallsign);
+        Assert.Equal("how", result[3].Content);
+        Assert.False(result[4].IsCallsign);
+        Assert.Equal("are", result[4].Content);
+        Assert.False(result[5].IsCallsign);
+        Assert.Equal("you", result[5].Content);
+        Assert.False(result[6].IsCallsign);
+        Assert.Equal("doing", result[6].Content);
+        Assert.True(result[7].IsCallsign);
+        Assert.Equal("Delta 456", result[7].Content);
+        Assert.False(result[8].IsCallsign);
+        Assert.Equal("sup", result[8].Content);
+    }
+
 }
