@@ -2,7 +2,7 @@
 
 using Xunit;
 
-public class MessageTests
+public class SplitMessageTests
 {
     [Fact]
     public void SplitMessage_WithValidSingleWordCallsigns_ReturnsCorrectTokens()
@@ -156,3 +156,110 @@ public class MessageTests
     }
 
 }
+
+public class ParseMessageTests
+{
+    [Fact]
+    public void Parse_WithValidTwoCallsignsAndMessage_ReturnsCorrectMessage()
+    {
+        // Arrange
+        var rawMessage = "ABC123 DEF456 Hello World";
+        var state = new ATCState();
+        var abc123 = new Aircraft("ABC123", "Test");
+        var def456 = new Aircraft("DEF456", "Test");
+        state.ActiveCommunicators.AddCommunicator(abc123);
+        state.ActiveCommunicators.AddCommunicator(def456);
+        state.MessagePayloadTypes.Add(new EmptyMessagePayloadParser());
+
+        // Act
+        var result = Message.Parse(rawMessage, state);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(rawMessage, result.RawMessage);
+        Assert.Equal(abc123, result.To);
+        Assert.Equal(def456, result.From);
+        Assert.IsType<EmptyMessagePayload>(result.Payload);
+        Assert.Equal("Hello World", result.Payload.RawContent);
+    }
+
+    [Fact]
+    public void Parse_WithSingleCallsignAndMessage_ReturnsCorrectMessage()
+    {
+        // Arrange
+        var rawMessage = "ABC123 radio check";
+        var state = new ATCState();
+        var abc123 = new Aircraft("ABC123", "Test");
+        state.ActiveCommunicators.AddCommunicator(abc123);
+        state.MessagePayloadTypes.Add(new EmptyMessagePayloadParser());
+
+        // Act
+        var result = Message.Parse(rawMessage, state);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(rawMessage, result.RawMessage);
+        Assert.Equal(abc123, result.From);
+        Assert.Null(result.To);
+        Assert.IsType<EmptyMessagePayload>(result.Payload);
+        Assert.Equal("radio check", result.Payload.RawContent);
+    }
+
+    [Fact]
+    public void Parse_WithMessageAndCallsign_ReturnsCorrectMessage()
+    {
+        // Arrange
+        var rawMessage = "Hello World ABC 123";
+        var state = new ATCState();
+        var abc123 = new Aircraft("ABC 123", "Test");
+        state.ActiveCommunicators.AddCommunicator(abc123);
+        state.MessagePayloadTypes.Add(new EmptyMessagePayloadParser());
+
+        // Act
+        var result = Message.Parse(rawMessage, state);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(rawMessage, result.RawMessage);
+        Assert.Null(result.To);
+        Assert.Equal(abc123, result.From);
+        Assert.IsType<EmptyMessagePayload>(result.Payload);
+        Assert.Equal("Hello World", result.Payload.RawContent);
+    }
+
+    [Fact]
+    public void Parse_WithOnlyMessage_ReturnsCorrectMessage()
+    {
+        // Arrange
+        var rawMessage = "Hello World";
+        var state = new ATCState();
+        state.MessagePayloadTypes.Add(new EmptyMessagePayloadParser());
+
+        // Act
+        var result = Message.Parse(rawMessage, state);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(rawMessage, result.RawMessage);
+        Assert.Null(result.To);
+        Assert.Null(result.From);
+        Assert.IsType<EmptyMessagePayload>(result.Payload);
+        Assert.Equal("Hello World", result.Payload.RawContent);
+    }
+
+    [Fact]
+    public void Parse_WithEmptyMessage_ReturnsNull()
+    {
+        // Arrange
+        var rawMessage = "";
+        var state = new ATCState();
+        state.MessagePayloadTypes.Add(new EmptyMessagePayloadParser());
+
+        // Act
+        var result = Message.Parse(rawMessage, state);
+
+        // Assert
+        Assert.Null(result);
+    }
+}
+

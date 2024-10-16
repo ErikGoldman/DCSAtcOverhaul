@@ -27,7 +27,8 @@ namespace ATCLib
 
   public class ATCState
   {
-    ActiveCommunicatorList ActiveCommunicators { get; }
+    public ActiveCommunicatorList ActiveCommunicators { get; }
+    public List<MessagePayloadParser> MessagePayloadTypes { get; } = [];
 
     public ATCState()
     {
