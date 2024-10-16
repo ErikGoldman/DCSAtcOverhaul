@@ -2,7 +2,7 @@ namespace ATCLib
 {
   public abstract class MessagePayloadParser
   {
-    public abstract MessagePayload? Parse(List<MessageToken> tokens);
+    public abstract MessagePayload? Parse(string messageString, List<MessageToken> tokens);
     public static int FindPhraseIndex(List<MessageToken> tokens, string[][] phrases)
     {
       for (int i = 0; i < tokens.Count; i++)
@@ -42,21 +42,21 @@ namespace ATCLib
   {
     public string RawContent { get; }
 
-    public MessagePayload(List<MessageToken> tokens)
+    public MessagePayload(string rawContent)
     {
-      RawContent = string.Join(" ", tokens.Select(t => t.Content));
+      RawContent = rawContent;
     }
   }
 
-  public class EmptyMessagePayload(List<MessageToken> rawContent) : MessagePayload(rawContent)
+  public class EmptyMessagePayload(string rawContent) : MessagePayload(rawContent)
   {
   }
 
   public class EmptyMessagePayloadParser : MessagePayloadParser
   {
-    public override MessagePayload? Parse(List<MessageToken> tokens)
+    public override MessagePayload? Parse(string messageString, List<MessageToken> tokens)
     {
-      return new EmptyMessagePayload(tokens);
+      return new EmptyMessagePayload(messageString);
     }
   }
 
@@ -193,9 +193,12 @@ namespace ATCLib
         }
       }
 
+      var messageString = string.Join(" ", tokens[contentStart..contentEnd].Select(t => t.Content));
+      var messageTokens = tokens[contentStart..contentEnd];
+
       foreach (var payloadParser in state.MessagePayloadTypes)
       {
-        var payload = payloadParser.Parse(tokens[contentStart..contentEnd]);
+        var payload = payloadParser.Parse(messageString, messageTokens);
         if (payload != null)
         {
           return new Message(rawMessage, maybeFrom, maybeTo, payload);
@@ -204,7 +207,7 @@ namespace ATCLib
 
       if (maybeFrom != null)
       {
-        return new Message(rawMessage, maybeFrom, maybeTo, new EmptyMessagePayload(tokens[contentStart..contentEnd]));
+        return new Message(rawMessage, maybeFrom, maybeTo, new EmptyMessagePayload(messageString));
       }
 
       return null;

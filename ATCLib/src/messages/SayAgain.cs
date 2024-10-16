@@ -1,22 +1,23 @@
+using System.Text.RegularExpressions;
+
 namespace ATCLib.Messages
 {
-  public class SayAgain(List<MessageToken> tokens) : MessagePayload(tokens)
+  public class SayAgain(string messageString) : MessagePayload(messageString)
   {
   }
 
   public class SayAgainMessagePayloadParser : MessagePayloadParser
   {
-    public override MessagePayload? Parse(List<MessageToken> tokens)
+    private static readonly Regex SayAgainRegex = new Regex(@"(say ((it|that) )?again|repeat)", RegexOptions.IgnoreCase);
+
+    public override MessagePayload? Parse(string messageString, List<MessageToken> tokens)
     {
-      var sayAgainIndex = MessagePayloadParser.FindPhraseIndex(tokens, [
-        ["say", "again"], ["repeat"], ["say", "that", "again"]
-      ]);
-      if (sayAgainIndex == -1)
+      if (SayAgainRegex.IsMatch(messageString))
       {
-        return null;
+        return new SayAgain(messageString);
       }
 
-      return new SayAgain(tokens);
+      return null;
     }
   }
 }

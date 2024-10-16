@@ -220,4 +220,92 @@ public class SimpleMessageTests
         Assert.Equal(pqr678, result.From);
         Assert.IsType<EmptyMessagePayload>(result.Payload);
     }
+
+    [Fact]
+    public void Parse_WithRadioCheckMessage_ReturnsRadioCheckPayload()
+    {
+        // Arrange
+        var rawMessage = "ABC123 radio check";
+        var state = new ATCState();
+        var abc123 = new Aircraft("ABC123", "Test");
+        state.ActiveCommunicators.AddCommunicator(abc123);
+        state.MessagePayloadTypes.Add(new RadioCheckMessagePayloadParser());
+
+        // Act
+        var result = Message.Parse(rawMessage, state);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(rawMessage, result.RawMessage);
+        Assert.Equal(abc123, result.From);
+        Assert.Null(result.To);
+        Assert.IsType<RadioCheck>(result.Payload);
+        Assert.Equal("radio check", result.Payload.RawContent);
+    }
+
+    [Fact]
+    public void Parse_WithCheckRadioMessage_ReturnsRadioCheckPayload()
+    {
+        // Arrange
+        var rawMessage = "DEF456 check radio";
+        var state = new ATCState();
+        var def456 = new Aircraft("DEF456", "Test");
+        state.ActiveCommunicators.AddCommunicator(def456);
+        state.MessagePayloadTypes.Add(new RadioCheckMessagePayloadParser());
+
+        // Act
+        var result = Message.Parse(rawMessage, state);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(rawMessage, result.RawMessage);
+        Assert.Equal(def456, result.From);
+        Assert.Null(result.To);
+        Assert.IsType<RadioCheck>(result.Payload);
+        Assert.Equal("check radio", result.Payload.RawContent);
+    }
+
+    [Fact]
+    public void Parse_WithDoYouCopyMessage_ReturnsRadioCheckPayload()
+    {
+        // Arrange
+        var rawMessage = "GHI789 do you copy";
+        var state = new ATCState();
+        var ghi789 = new Aircraft("GHI789", "Test");
+        state.ActiveCommunicators.AddCommunicator(ghi789);
+        state.MessagePayloadTypes.Add(new RadioCheckMessagePayloadParser());
+
+        // Act
+        var result = Message.Parse(rawMessage, state);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(rawMessage, result.RawMessage);
+        Assert.Equal(ghi789, result.From);
+        Assert.Null(result.To);
+        Assert.IsType<RadioCheck>(result.Payload);
+        Assert.Equal("do you copy", result.Payload.RawContent);
+    }
+
+    [Fact]
+    public void Parse_WithEmptyMessage_ReturnsRadioCheckPayload()
+    {
+        // Arrange
+        var rawMessage = "JKL012";
+        var state = new ATCState();
+        var jkl012 = new Aircraft("JKL012", "Test");
+        state.ActiveCommunicators.AddCommunicator(jkl012);
+        state.MessagePayloadTypes.Add(new RadioCheckMessagePayloadParser());
+
+        // Act
+        var result = Message.Parse(rawMessage, state);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(rawMessage, result.RawMessage);
+        Assert.Equal(jkl012, result.From);
+        Assert.Null(result.To);
+        Assert.IsType<EmptyMessagePayload>(result.Payload);
+        Assert.Equal("", result.Payload.RawContent);
+    }
 }

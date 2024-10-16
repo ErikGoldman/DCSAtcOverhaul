@@ -4,3 +4,4 @@
 # Ignore bin and obj directories in all subdirectories
 **/bin/
 **/obj/
+**/coverage

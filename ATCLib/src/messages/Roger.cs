@@ -1,25 +1,27 @@
+using System.Text.RegularExpressions;
+
 namespace ATCLib.Messages
 {
-    public class Roger(List<MessageToken> tokens) : MessagePayload(tokens)
+    public class Roger(string messageString) : MessagePayload(messageString)
     {
     }
 
     public class RogerMessagePayloadParser : MessagePayloadParser
     {
-        public override MessagePayload? Parse(List<MessageToken> tokens)
+        private static readonly Regex RogerRegex = new Regex(@"(roger|affirmative|copy)", RegexOptions.IgnoreCase);
+
+        public override MessagePayload? Parse(string messageString, List<MessageToken> tokens)
         {
             if (tokens.Count == 0)
             {
-                return new Roger(tokens);
+                return new Roger(messageString);
             }
 
-            var rogerIndex = MessagePayloadParser.FindPhraseIndex(tokens, [["roger"], ["affirmative"], ["copy"]]);
-            if (rogerIndex == -1)
+            if (RogerRegex.IsMatch(messageString))
             {
-                return null;
+                return new Roger(messageString);
             }
-
-            return new Roger(tokens);
+            return null;
         }
     }
 }
