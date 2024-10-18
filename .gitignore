@@ -1,7 +1,8 @@
-.vscode
-.idea
+config.json
+*.wav
+*.mp3
+*.flac
+*.raw
+third_party
 .vs
-# Ignore bin and obj directories in all subdirectories
-**/bin/
-**/obj/
-**/coverage
+bin
