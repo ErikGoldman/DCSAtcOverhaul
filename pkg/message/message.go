@@ -19,7 +19,7 @@ type Message[T any] struct {
 	GameTimeSecond int
 }
 
-func FromMessage[T any](ctx context.Context, msg Message[T], data T) Message[T] {
+func FromMessage[T any](ctx context.Context, msg *Message[T], data T) Message[T] {
 	return Message[T]{Context: ctx, TraceId: msg.TraceId,
 		Frequencies: msg.Frequencies, ClientName: msg.ClientName, Data: data,
 		GameTimeHour: msg.GameTimeHour, GameTimeMinute: msg.GameTimeMinute,

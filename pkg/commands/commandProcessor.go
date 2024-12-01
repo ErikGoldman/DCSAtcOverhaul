@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/ErikGoldman/DCSAtcOverhaul/pkg/atcmodel"
 	"github.com/ErikGoldman/DCSAtcOverhaul/pkg/message"
 	"github.com/rs/zerolog/log"
 )
 
 type PlayerCommand interface {
-	Execute() (string, error)
+	Execute(atc *atcmodel.AtcModel, messageOut chan message.OutgoingMessage) error
 }
 
 // PlayerCommand represents a parsed command

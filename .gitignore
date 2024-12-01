@@ -6,3 +6,4 @@ config.json
 third_party
 .vs
 bin
+.vscode

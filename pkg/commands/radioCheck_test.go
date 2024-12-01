@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ErikGoldman/DCSAtcOverhaul/pkg/message"
+	"github.com/dharmab/skyeye/pkg/simpleradio/voice"
 )
 
 func TestRadioCheck(t *testing.T) {
@@ -53,17 +54,36 @@ func TestRadioCheck(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			rand.ResetTo(tt.randValues)
 
-			msg := message.AsMessage(context.Background(), "trace1", tt.clientName, tt.input)
+			msg := message.Message[string]{
+				Context:    context.Background(),
+				TraceId:    "trace1",
+				ClientName: tt.clientName,
+				Frequencies: []voice.Frequency{
+					{
+						Frequency:  123,
+						Modulation: 1,
+						Encryption: 0,
+					},
+				},
+				Data: tt.input,
+			}
 			result, err := cp.ProcessText(context.Background(), &msg)
+
+			outChan := make(chan message.OutgoingMessage, 10)
 
 			if tt.shouldMatch {
 				assert.Nil(err, "Expected match but got error: %v", err)
 
-				response, err := result.ParsedCommand.Execute()
+				err := result.ParsedCommand.Execute(nil, outChan)
 				assert.Nil(err, "Failed to execute command: %v", err)
-				assert.NotNil(response, "Expected non-empty response")
 
-				assert.Equal(tt.expectedText, response, "Expected reply text to match")
+				select {
+				case response := <-outChan:
+					assert.NotNil(response, "Expected non-empty response")
+					assert.Equal(tt.expectedText, response.Message.Data, "Expected reply text to match")
+				default:
+					assert.Fail("no response generated")
+				}
 			} else {
 				assert.NotNil(err, "Expected error for non-matching input")
 			}

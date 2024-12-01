@@ -6,11 +6,14 @@ import (
 	"errors"
 	"time"
 
+	"github.com/ErikGoldman/DCSAtcOverhaul/pkg/atcmodel"
 	"github.com/ErikGoldman/DCSAtcOverhaul/pkg/commands"
 	deepgramspeaker "github.com/ErikGoldman/DCSAtcOverhaul/pkg/deepgramSpeaker"
 	"github.com/ErikGoldman/DCSAtcOverhaul/pkg/message"
 	"github.com/dharmab/skyeye/pkg/recognizer"
+	"github.com/dharmab/skyeye/pkg/sim"
 	"github.com/dharmab/skyeye/pkg/simpleradio"
+	"github.com/dharmab/skyeye/pkg/telemetry"
 	"github.com/rs/zerolog/log"
 )
 
@@ -19,6 +22,14 @@ type AtcApplication struct {
 	SpeechSynthesizer          deepgramspeaker.TextToSpeech
 	CommandProcessor           commands.CommandProcessorInterface
 	EnableTranscriptionLogging bool
+	TelemetryClient            telemetry.Client
+	AtcModel                   atcmodel.AtcModel
+
+	incomingPlayerCommands chan<- atcmodel.AtcCommand
+
+	simStarted chan<- sim.Started
+	simUpdated chan<- sim.Updated
+	simFaded   chan<- sim.Faded
 
 	TranscribedMessages chan message.Message[string]
 	OutgoingMessages    chan message.OutgoingMessage
@@ -59,17 +70,8 @@ func (a *AtcApplication) processTranscriptLoop(radioClient simpleradio.Client) {
 			log.Info().Msg("processing transcription")
 			cmd, err := a.CommandProcessor.ProcessText(context.Background(), &msg)
 			if err == nil {
-				log.Info().Msgf("executing command %s", cmd)
-				outgoingText, err := cmd.ParsedCommand.Execute()
-				if err != nil {
-					log.Error().Err(err).Msgf("error executing command")
-					continue
-				}
-
-				a.OutgoingMessages <- message.OutgoingMessage{
-					Message: message.FromMessage(context.Background(), msg, outgoingText),
-					Model:   "aura-asteria-en",
-				}
+				log.Info().Msgf("sending command to ATC %s", cmd)
+				a.incomingPlayerCommands <- cmd.ParsedCommand
 			} else {
 				log.Info().Msgf("command parsing failed")
 			}
@@ -201,6 +203,12 @@ func (a *AtcApplication) Start(srsClient simpleradio.Client) {
 	a.stopCtx, a.stopCancelFn = context.WithCancel(context.Background())
 	a.TranscribedMessages = make(chan message.Message[string], 5)
 	a.OutgoingMessages = make(chan message.OutgoingMessage, 5)
+
+	go a.TelemetryClient.Run(a.stopCtx, nil)
+	go func() {
+		log.Info().Msg("streaming telemetry data")
+		a.TelemetryClient.Stream(a.stopCtx, nil, a.simStarted, a.simUpdated, a.simFaded)
+	}()
 
 	go a.processOutgoingAudioLoop(srsClient)
 	go a.processTranscriptLoop(srsClient)

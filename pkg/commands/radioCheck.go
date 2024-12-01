@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/ErikGoldman/DCSAtcOverhaul/pkg/atcmodel"
 	"github.com/ErikGoldman/DCSAtcOverhaul/pkg/message"
 )
 
@@ -21,8 +22,8 @@ func (m *RadioCheck) String() string {
 	return "RadioCheckCommand"
 }
 
-func (m *RadioCheck) Execute() (string, error) {
-	fmt.Printf("Radio check %s", m.Message.ClientName)
+func (m *RadioCheck) Execute(atc *atcmodel.AtcModel, messageOut chan message.OutgoingMessage) error {
+	fmt.Printf("[execute] radio check %s", m.Message.ClientName)
 
 	intro := ""
 	if m.globalContext.rand.IntN(3) == 0 {
@@ -51,8 +52,14 @@ func (m *RadioCheck) Execute() (string, error) {
 	} else if variation == 4 {
 		bodyText = "reading you loud and clear"
 	}
+	messageText := fmt.Sprintf("%s %s", intro, bodyText)
 
-	return fmt.Sprintf("%s %s", intro, bodyText), nil
+	messageOut <- message.OutgoingMessage{
+		Message: message.FromMessage(m.Message.Context, m.Message, messageText),
+		Model:   "aura-asteria-en",
+	}
+
+	return nil
 }
 
 func (p *RadioCheckParser) Parse(globalContext *GlobalCommandContext, message *message.Message[string]) PlayerCommand {

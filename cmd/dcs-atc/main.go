@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"flag"
 	"os"
 	"sync"
 	"time"
@@ -17,9 +18,15 @@ import (
 	"github.com/ErikGoldman/DCSAtcOverhaul/pkg/deepgramRecognizer"
 	deepgramspeaker "github.com/ErikGoldman/DCSAtcOverhaul/pkg/deepgramSpeaker"
 	"github.com/ErikGoldman/DCSAtcOverhaul/pkg/message"
+	"github.com/dharmab/skyeye/pkg/telemetry"
 )
 
 func main() {
+	telemetryAddress := flag.String("telemetryAddress", "", "The address of the Tacview server")
+	if telemetryAddress == nil {
+		panic("No telemetry address defined")
+	}
+
 	config := types.ClientConfiguration{
 		Address:                   "192.168.86.40:5002",
 		ClientName:                "test",
@@ -58,12 +65,23 @@ func main() {
 
 	recognizer := deepgramRecognizer.NewAtcDeepgramRecognizer(configData.Deepgram.APIKey)
 
+	var telemetryClient telemetry.Client
+	log.Info().Str("address", *telemetryAddress).Msg("constructing telemetry client")
+	telemetryClient = telemetry.NewTelemetryClient(
+		*telemetryAddress,
+		"hostname",
+		"",            // password
+		500,           //timeout
+		2*time.Second, // refresh rate in seconds
+	)
+
 	a := &atcclient.AtcApplication{
 		Recognizer:                 recognizer,
 		EnableTranscriptionLogging: true,
 		TranscribedMessages:        make(chan message.Message[string]),
 		CommandProcessor:           atcclient.LoadCommandProcessor(),
 		SpeechSynthesizer:          deepgramspeaker.NewSpeechSynthesizer(configData.Deepgram.APIKey),
+		TelemetryClient:            telemetryClient,
 	}
 
 	log.Info().Msgf("config: %v", config)
@@ -74,25 +92,10 @@ func main() {
 		return
 	}
 
-	go a.Start(srsClient)
-	var wg sync.WaitGroup
-
 	log.Info().Msgf("running")
 
-	/*
-		atcRecognizer, ok := recognizer.(*deepgramRecognizer.AtcDeepgramRecognizer)
-		if !ok {
-			log.Error().Msg("Failed to cast recognizer to AtcDeepgramRecognizer")
-			return
-		}
-
-			text, err := atcRecognizer.Debug_ReadFromWavFile("voice test.wav")
-			if err != nil {
-				log.Error().Err(err).Msg("Failed to read WAV file")
-				return
-			}
-			log.Info().Msgf("recognized text: %s", text)
-	*/
+	go a.Start(srsClient)
+	var wg sync.WaitGroup
 
 	srsClient.Run(
 		context.Background(),
