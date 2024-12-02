@@ -26,7 +26,7 @@ type GlobalCommandContext struct {
 
 // PlayerCommandParser defines the interface for command parsers
 type PlayerCommandParser interface {
-	Parse(globalContext *GlobalCommandContext, message *message.Message[string]) PlayerCommand
+	Parse(globalContext *GlobalCommandContext, atcModel * ,message *message.Message[string]) PlayerCommand
 }
 
 type CommandProcessorInterface interface {
