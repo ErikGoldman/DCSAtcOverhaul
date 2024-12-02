@@ -2,12 +2,10 @@ package atcmodel
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/ErikGoldman/DCSAtcOverhaul/pkg/message"
 	"github.com/dharmab/skyeye/pkg/sim"
 	"github.com/dharmab/skyeye/pkg/simpleradio/types"
-	"github.com/dharmab/skyeye/pkg/spatial"
 	"github.com/martinlindhe/unit"
 	"github.com/rs/zerolog/log"
 )
@@ -80,54 +78,6 @@ type SquadSearchResult struct {
 	Distance         int
 	IsAlreadyInSquad bool
 	AGL              unit.Length
-}
-
-// if someone says "squad of two F16s" -- which two F16s?
-func (a *AtcModel) FindCandidatesForSquad(ctx context.Context, leaderId uint64,
-	squadmatePlanes []string, maxDistance unit.Length) ([]SquadSearchResult, error) {
-
-	var leaderData *sim.Updated
-	leaderData, foundLeader := a.AllPlaneData[leaderId]
-	if !foundLeader {
-		return nil, fmt.Errorf("leader with id %d does not exist", leaderId)
-	}
-
-	planeTypes := make(map[string]struct{})
-	for _, str := range squadmatePlanes {
-		planeTypes[str] = struct{}{}
-	}
-
-	var candidatePlanes = []SquadSearchResult{}
-	for id, planeData := range a.AllPlaneData {
-		if id == leaderId {
-			continue
-		}
-
-		if _, ok := planeTypes[planeData.Labels.ACMIName]; !ok {
-			continue
-		}
-
-		distance := spatial.Distance(leaderData.Frame.Point, planeData.Frame.Point)
-		if distance > maxDistance {
-			continue
-		}
-
-		_, isAlreadyInSquad := a.PlaneToSquad[id]
-
-		candidatePlanes = append(candidatePlanes, SquadSearchResult{
-			PlaneId:          planeData.Labels.ID,
-			PlaneType:        planeData.Labels.ACMIName,
-			Distance:         int(distance),
-			IsAlreadyInSquad: isAlreadyInSquad,
-			AGL:              *planeData.Frame.AGL,
-		})
-	}
-
-	return candidatePlanes, nil
-}
-
-func (a *AtcModel) AddSquadron(planes []uint64) {
-
 }
 
 func (a *AtcModel) reset() {
