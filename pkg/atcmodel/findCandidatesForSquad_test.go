@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/dharmab/skyeye/pkg/bearings"
+	"github.com/dharmab/skyeye/pkg/coalitions"
 	"github.com/dharmab/skyeye/pkg/sim"
 	"github.com/dharmab/skyeye/pkg/spatial"
 	"github.com/dharmab/skyeye/pkg/trackfiles"
@@ -174,6 +175,48 @@ func TestFindCandidatesForSquad(t *testing.T) {
 				},
 			},
 			wantErr: false,
+		},
+		{
+			name: "ignore if different coalition",
+			setupModel: func() *AtcModel {
+				model := &AtcModel{
+					AllPlaneData: make(map[uint64]*sim.Updated),
+					PlaneToSquad: make(map[uint64]*AtcSquadron),
+				}
+
+				model.AllPlaneData[1] = &sim.Updated{
+					Labels: trackfiles.Labels{
+						ID:        1,
+						ACMIName:  "F-16C_50",
+						Coalition: coalitions.Blue,
+					},
+					Frame: trackfiles.Frame{
+						Point: orb.Point{45, 45},
+						AGL:   ptrlength(1000 * unit.Meter),
+					},
+				}
+
+				// Nearby F-16 already in squad
+				model.AllPlaneData[2] = &sim.Updated{
+					Labels: trackfiles.Labels{
+						ID:        2,
+						ACMIName:  "F-16C_50",
+						Coalition: coalitions.Red,
+					},
+					Frame: trackfiles.Frame{
+						Point: spatial.PointAtBearingAndDistance(orb.Point{45, 45}, bearings.NewTrueBearing(10), unit.Meter*1000),
+						AGL:   ptrlength(1000 * unit.Meter),
+					},
+				}
+
+				return model
+			},
+			leaderId:      1,
+			planeTypes:    []string{"F-16C_50"},
+			maxDistance:   5000 * unit.Meter,
+			wantResults:   []SquadSearchResult{},
+			wantErr:       false,
+			errorContains: "",
 		},
 		{
 			name: "leader not found",

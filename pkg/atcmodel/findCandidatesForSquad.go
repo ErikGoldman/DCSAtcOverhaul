@@ -31,6 +31,10 @@ func (a *AtcModel) FindCandidatesForSquad(ctx context.Context, leaderId uint64,
 			continue
 		}
 
+		if planeData.Labels.Coalition != leaderData.Labels.Coalition {
+			continue
+		}
+
 		if _, ok := planeTypes[planeData.Labels.ACMIName]; !ok {
 			continue
 		}
